@@ -1,0 +1,30 @@
+{
+  "name": "@nosuprises/backend",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run src/__tests__/unit --passWithNoTests",
+    "test:integration": "vitest run src/__tests__/integration --passWithNoTests",
+    "test:smoke": "vitest run src/__tests__/integration/analyze.contract-smoke.test.ts --passWithNoTests",
+    "start": "next start -p 3000"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.101.1",
+    "next": "^16.2.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "@types/react": "19.2.14",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}
