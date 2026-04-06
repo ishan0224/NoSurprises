@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "NoSurprises",
+  "version": "0.0.0",
+  "description": "Analyze Terms and Conditions with AI.",
+  "action": {
+    "default_title": "NoSurprises",
+    "default_popup": "src/popup/popup.html"
+  },
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "scripting", "activeTab"],
+  "host_permissions": ["<all_urls>"]
+}

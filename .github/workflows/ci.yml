@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/backend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: apps/backend
+
+      - name: Backend lint
+        run: npm run lint
+        working-directory: apps/backend
+
+      - name: Backend typecheck
+        run: npm run typecheck
+        working-directory: apps/backend
+
+      - name: Backend unit tests
+        run: npm run test:unit
+        working-directory: apps/backend
+
+      - name: Backend integration tests
+        run: npm run test:integration
+        working-directory: apps/backend
+
+      - name: Backend smoke tests
+        run: npm run test:smoke
+        working-directory: apps/backend
+
+  extension-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/extension/package-lock.json
+
+      - name: Install extension dependencies
+        run: npm ci
+        working-directory: apps/extension
+
+      - name: Extension lint
+        run: npm run lint
+        working-directory: apps/extension
+
+      - name: Extension typecheck
+        run: npm run typecheck
+        working-directory: apps/extension
+
+      - name: Extension tests
+        run: npm test
+        working-directory: apps/extension
+
+      - name: Extension build
+        run: npm run build
+        working-directory: apps/extension
+
+      - name: Extension smoke validation
+        run: npm run test:smoke
+        working-directory: apps/extension
+
+  migration-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Supabase migrations
+        run: bash scripts/validate-migrations.sh

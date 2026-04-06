@@ -1,0 +1,11 @@
+{
+  "extends": "../../packages/config/typescript/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "types": ["vite/client", "node", "chrome"],
+    "paths": {
+      "@contracts/*": ["../../packages/contracts/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "vite.config.ts"]
+}

@@ -1,0 +1,52 @@
+# Dependencies and package manager caches
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+
+# Build and runtime artifacts
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.cache/
+coverage/
+.turbo/
+
+# TypeScript and tool caches
+*.tsbuildinfo
+.eslintcache
+
+# Supabase CLI local state
+**/.temp/
+
+# Next.js and deployment artifacts
+.vercel/
+next-env.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Markdown policy (case-insensitive):
+# Ignore all markdown files, keep only root monorepo README.md
+**/*.[mM][dD]
+!/[Rr][Ee][Aa][Dd][Mm][Ee].[mM][dD]

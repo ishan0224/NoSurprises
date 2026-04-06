@@ -1,0 +1,25 @@
+{
+  "name": "@nosuprises/extension",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && cp manifest.json dist/manifest.json",
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:smoke": "node ../../scripts/verify-extension-dist.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.29",
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2",
+    "vite": "^7.1.11",
+    "vitest": "^4.1.2",
+    "jsdom": "^27.0.0"
+  }
+}

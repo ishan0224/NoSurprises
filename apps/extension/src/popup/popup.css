@@ -1,0 +1,147 @@
+.popup {
+  width: 340px;
+  min-height: 260px;
+  box-sizing: border-box;
+  padding: 14px;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.popup-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.section-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.section-subtitle {
+  margin: 12px 0 8px;
+  font-size: 13px;
+}
+
+.popup-description {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.popup-button {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #0f172a;
+  cursor: pointer;
+}
+
+.popup-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.risk-badge {
+  display: inline-block;
+  margin: 0 0 10px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.risk-low {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.risk-medium {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.risk-high {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.updated-banner {
+  margin: 0 0 10px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c2d12;
+  background: #ffedd5;
+}
+
+.red-flags-list,
+.links-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.red-flag {
+  margin-bottom: 10px;
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.red-flag-title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.red-flag-quote {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.red-flag-severity {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.severity-low {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.severity-medium {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.severity-high {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.links-item + .links-item {
+  margin-top: 6px;
+}
+
+.links-anchor {
+  font-size: 12px;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.links-anchor:hover {
+  text-decoration: underline;
+}

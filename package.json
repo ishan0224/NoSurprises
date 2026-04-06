@@ -1,0 +1,10 @@
+{
+  "name": "nosuprises",
+  "private": true,
+  "packageManager": "pnpm@10",
+  "scripts": {
+    "typecheck": "echo 'TODO: wire workspace typecheck'",
+    "lint": "echo 'TODO: wire workspace lint'",
+    "test": "echo 'TODO: wire workspace test'"
+  }
+}
