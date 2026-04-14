@@ -24,6 +24,39 @@ const TERMS_KEYWORDS = [
 
 const MAX_LINK_CANDIDATES = 5;
 export const MAX_EXTRACTED_TEXT_LENGTH = 120_000;
+export const MIN_LEGAL_TEXT_LENGTH = 800;
+export const MIN_LEGAL_KEYWORD_HITS = 5;
+
+const LEGAL_QUALITY_KEYWORDS = [
+  "terms",
+  "conditions",
+  "liability",
+  "refund",
+  "cancellation",
+  "warranty",
+  "indemn",
+  "governing law",
+  "arbitration",
+  "privacy",
+  "account",
+  "booking",
+  "check-in",
+  "travel document",
+  "fees"
+] as const;
+
+const LEGAL_SECTION_MARKERS = [
+  "terms of service",
+  "limitation of liability",
+  "disclaimer",
+  "refund",
+  "cancellation",
+  "check-in",
+  "travel documents",
+  "responsibilities",
+  "pricing",
+  "governing law"
+] as const;
 
 export interface ReadabilityResultLike {
   textContent?: string | null;
@@ -34,6 +67,16 @@ export interface ReadabilityParserLike {
 }
 
 export type ReadabilityFactory = (documentNode: Document) => ReadabilityParserLike;
+
+interface ExtractionCandidate {
+  source: "readability" | "full_body";
+  text: string;
+  length: number;
+  legalKeywordHits: number;
+  sectionMarkerHits: number;
+  qualityScore: number;
+}
+
 const EXTRACTOR_RUN_COMMAND = "RUN_EXTRACTION";
 export type ExtractorCommandMessage = { type: typeof EXTRACTOR_RUN_COMMAND };
 
@@ -118,6 +161,112 @@ export const truncateExtractedText = (cleanedText: string): string =>
     ? cleanedText.slice(0, MAX_EXTRACTED_TEXT_LENGTH)
     : cleanedText;
 
+function countOccurrences(haystack: string, needle: string): number {
+  if (!needle) {
+    return 0;
+  }
+
+  let index = 0;
+  let count = 0;
+  while (true) {
+    const foundAt = haystack.indexOf(needle, index);
+    if (foundAt === -1) {
+      return count;
+    }
+    count += 1;
+    index = foundAt + needle.length;
+  }
+}
+
+function computeLegalKeywordHits(lowerText: string): number {
+  return LEGAL_QUALITY_KEYWORDS.reduce((total, keyword) => total + countOccurrences(lowerText, keyword), 0);
+}
+
+function computeSectionMarkerHits(lowerText: string): number {
+  return LEGAL_SECTION_MARKERS.reduce(
+    (total, marker) => total + (lowerText.includes(marker) ? 1 : 0),
+    0
+  );
+}
+
+function buildExtractionCandidate(
+  source: ExtractionCandidate["source"],
+  rawText: string | null | undefined
+): ExtractionCandidate | null {
+  if (!rawText) {
+    return null;
+  }
+
+  const cleanedText = truncateExtractedText(cleanExtractedText(rawText));
+  if (!cleanedText) {
+    return null;
+  }
+
+  const lowerText = cleanedText.toLowerCase();
+  const legalKeywordHits = computeLegalKeywordHits(lowerText);
+  const sectionMarkerHits = computeSectionMarkerHits(lowerText);
+  const qualityScore =
+    legalKeywordHits * 8 + sectionMarkerHits * 12 + Math.min(cleanedText.length / 2_000, 20);
+
+  return {
+    source,
+    text: cleanedText,
+    length: cleanedText.length,
+    legalKeywordHits,
+    sectionMarkerHits,
+    qualityScore
+  };
+}
+
+function shouldForceFullBodyForLegalPage(
+  bestCandidate: ExtractionCandidate,
+  fullBodyCandidate: ExtractionCandidate
+): boolean {
+  if (
+    bestCandidate.length < MIN_LEGAL_TEXT_LENGTH ||
+    bestCandidate.legalKeywordHits < MIN_LEGAL_KEYWORD_HITS
+  ) {
+    return true;
+  }
+
+  if (
+    bestCandidate.source === "readability" &&
+    fullBodyCandidate.length > bestCandidate.length * 2 &&
+    fullBodyCandidate.legalKeywordHits >= bestCandidate.legalKeywordHits + 2
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function selectBestLegalTextCandidate(
+  documentNode: Document,
+  pageUrl: string,
+  readabilityText: string | null,
+  fullBodyText: string
+): string {
+  const fullBodyCandidate = buildExtractionCandidate("full_body", fullBodyText);
+  if (!fullBodyCandidate) {
+    return "";
+  }
+
+  const readabilityCandidate = buildExtractionCandidate("readability", readabilityText);
+  const bestCandidate =
+    readabilityCandidate && readabilityCandidate.qualityScore > fullBodyCandidate.qualityScore
+      ? readabilityCandidate
+      : fullBodyCandidate;
+
+  const isLikelyLegalPage = isTcUrlPath(pageUrl) || isTcHeadingText(documentNode);
+  if (!isLikelyLegalPage) {
+    return bestCandidate.text;
+  }
+
+  return shouldForceFullBodyForLegalPage(bestCandidate, fullBodyCandidate)
+    ? fullBodyCandidate.text
+    : bestCandidate.text;
+}
+
 export const toSha256Hex = async (input: string): Promise<string> => {
   const encoded = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
@@ -133,8 +282,9 @@ export const createTcFoundMessage = async (
 ): Promise<TcFoundMessage> => {
   const parsed = new URL(pageUrl);
   const domain = normalizeDomain(parsed.hostname);
-  const rawText = extractReadabilityText(documentNode, parserFactory) ?? fallbackDocumentText(documentNode);
-  const text = truncateExtractedText(cleanExtractedText(rawText));
+  const readabilityText = extractReadabilityText(documentNode, parserFactory);
+  const fullBodyText = fallbackDocumentText(documentNode);
+  const text = selectBestLegalTextCandidate(documentNode, pageUrl, readabilityText, fullBodyText);
   const textHash = await toSha256Hex(text);
 
   return {

@@ -11,6 +11,7 @@ import {
   isTcHeadingText,
   isTcUrlPath,
   MAX_EXTRACTED_TEXT_LENGTH,
+  selectBestLegalTextCandidate,
   truncateExtractedText,
   toSha256Hex
 } from "./extractor";
@@ -101,6 +102,50 @@ describe("extraction", () => {
 
     expect(truncated).toHaveLength(MAX_EXTRACTED_TEXT_LENGTH);
     expect(truncated.endsWith("A")).toBe(true);
+  });
+
+  it("falls back to full-body legal content when readability returns promo-like snippet", async () => {
+    const doc = createDocument(`
+      <h1>Terms of Service</h1>
+      <p>Done with complete ease and no hassles at all.</p>
+      <section>
+        <h2>Terms of the Airlines</h2>
+        <p>The airline tickets available through the Website are subject to the terms & conditions of the concerned airline, including cancellation and refund policies.</p>
+        <h2>Pricing</h2>
+        <p>The total price displayed includes base fare, applicable taxes, and convenience fees.</p>
+        <h2>Travel Documents</h2>
+        <p>It shall be the sole responsibility of the user to ensure they are in possession of valid travel documents.</p>
+      </section>
+    `);
+
+    const message = await createTcFoundMessage(
+      doc,
+      "https://www.makemytrip.com/legal/in/eng/user_agreement.html",
+      () => ({
+        parse: () => ({
+          textContent: "Done with complete ease and no hassles at all."
+        })
+      })
+    );
+
+    expect(message.text.toLowerCase()).toContain("terms of the airlines");
+    expect(message.text.toLowerCase()).toContain("travel documents");
+    expect(message.text.toLowerCase()).not.toBe("done with complete ease and no hassles at all.");
+  });
+});
+
+describe("candidate selection", () => {
+  it("prefers richer legal candidate for likely legal pages", () => {
+    const doc = createDocument("<h1>Terms of Service</h1>");
+    const selected = selectBestLegalTextCandidate(
+      doc,
+      "https://example.com/terms",
+      "We may update things from time to time.",
+      "Terms of Service. Liability limitations apply. Refund and cancellation policies apply. Travel documents required. Pricing and fees are subject to terms."
+    );
+
+    expect(selected.toLowerCase()).toContain("liability");
+    expect(selected.toLowerCase()).toContain("refund");
   });
 });
 
