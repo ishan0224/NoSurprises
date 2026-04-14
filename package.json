@@ -3,8 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10",
   "scripts": {
-    "typecheck": "echo 'TODO: wire workspace typecheck'",
-    "lint": "echo 'TODO: wire workspace lint'",
-    "test": "echo 'TODO: wire workspace test'"
+    "typecheck": "npm --prefix apps/backend run typecheck && npm --prefix apps/extension run typecheck",
+    "lint": "npm --prefix apps/backend run lint && npm --prefix apps/extension run lint",
+    "test": "npm --prefix apps/backend run test && npm --prefix apps/backend run test:smoke && npm --prefix apps/extension run test && npm --prefix apps/extension run test:smoke && bash scripts/validate-migrations.sh"
   }
 }

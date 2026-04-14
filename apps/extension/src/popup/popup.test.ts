@@ -3,7 +3,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { PopupActions, PopupViewState } from "./popup";
-import { renderLinkList, renderPopupState, renderRedFlag, renderRiskBadge } from "./popup";
+import {
+  reducePopupStateFromRuntimeMessage,
+  renderLinkList,
+  renderPopupState,
+  renderRedFlag,
+  renderRiskBadge
+} from "./popup";
 
 const baseState: PopupViewState = {
   domain: "example.com",
@@ -204,5 +210,38 @@ describe("popup helper renderers", () => {
 
     expect(badge.textContent).toBe("4.4 • Low Risk");
     expect(list.querySelectorAll("a")).toHaveLength(1);
+  });
+});
+
+describe("popup runtime state reducer", () => {
+  it("applies links_found updates for the active domain", () => {
+    const updated = reducePopupStateFromRuntimeMessage(baseState, {
+      type: "TC_LINKS_FOUND",
+      domain: "example.com",
+      links: [{ label: "Terms", href: "https://example.com/terms" }]
+    });
+
+    expect(updated.status).toBe("links_found");
+    expect(updated.links).toEqual([{ label: "Terms", href: "https://example.com/terms" }]);
+  });
+
+  it("applies not_found updates for the active domain", () => {
+    const updated = reducePopupStateFromRuntimeMessage(baseState, {
+      type: "TC_NOT_FOUND",
+      domain: "example.com",
+      pageUrl: "https://example.com/home"
+    });
+
+    expect(updated.status).toBe("not_found");
+  });
+
+  it("ignores runtime messages for other domains", () => {
+    const updated = reducePopupStateFromRuntimeMessage(baseState, {
+      type: "TC_NOT_FOUND",
+      domain: "another.com",
+      pageUrl: "https://another.com/home"
+    });
+
+    expect(updated).toBe(baseState);
   });
 });

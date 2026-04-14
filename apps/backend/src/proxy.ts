@@ -25,7 +25,7 @@ function buildErrorResponse(
   return response;
 }
 
-export function middleware(request: Request): Response | undefined {
+export function proxy(request: Request): Response | undefined {
   const env = getEnv();
   const origin = request.headers.get("origin");
   const requestId = crypto.randomUUID();

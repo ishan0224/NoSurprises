@@ -60,7 +60,7 @@ begin
     p_analyzed_at,
     true
   )
-  on conflict (website_id, content_hash)
+  on conflict on constraint analyses_website_hash_uniq
   do update set
     risk_score = excluded.risk_score,
     risk_label = excluded.risk_label,

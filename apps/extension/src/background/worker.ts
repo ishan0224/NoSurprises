@@ -66,6 +66,21 @@ const createInternalError = (message: string): AnalyzeErrorBody => ({
   requestId: `ext_${Date.now()}`
 });
 
+const createInternalErrorFromUnknown = (fallbackMessage: string, error: unknown): AnalyzeErrorBody => {
+  if (error instanceof Error && error.message.trim()) {
+    return createInternalError(`${fallbackMessage} (${error.message})`);
+  }
+  return createInternalError(fallbackMessage);
+};
+
+const summarizeResponseFailure = (status: number, responseBody: unknown): AnalyzeErrorBody => {
+  if (typeof responseBody === "string" && responseBody.trim()) {
+    const trimmed = responseBody.trim().slice(0, 180);
+    return createInternalError(`Analyze API failed with HTTP ${status}. ${trimmed}`);
+  }
+  return createInternalError(`Analyze API failed with HTTP ${status}.`);
+};
+
 const isAnalyzeSuccessResponse = (value: unknown): value is AnalyzeSuccessResponse => {
   if (!value || typeof value !== "object") {
     return false;
@@ -263,9 +278,23 @@ const handleTcFound = async (context: WorkerContext, message: TcFoundMessage): P
       body: JSON.stringify(request)
     });
 
-    const responseBody = (await response.json()) as unknown;
+    let responseBody: unknown;
+    try {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.toLowerCase().includes("application/json")) {
+        responseBody = (await response.json()) as unknown;
+      } else {
+        responseBody = await response.text();
+      }
+    } catch (error) {
+      responseBody = `Failed to parse API response body: ${
+        error instanceof Error ? error.message : "unknown error"
+      }`;
+    }
+
     if (!response.ok) {
-      const parsedError = parseAnalyzeError(responseBody) ?? createInternalError("Analyze API request failed.");
+      const parsedError =
+        parseAnalyzeError(responseBody) ?? summarizeResponseFailure(response.status, responseBody);
       await persistError(context, message.domain, parsedError);
       await persistStatus(context, message.domain, "error");
       await emitError(context, message.domain, parsedError);
@@ -293,8 +322,11 @@ const handleTcFound = async (context: WorkerContext, message: TcFoundMessage): P
     });
     await persistStatus(context, message.domain, "ready");
     await emitReady(context, message.domain, responseBody);
-  } catch {
-    const error = createInternalError("Network failure while analyzing terms.");
+  } catch (caughtError) {
+    const error = createInternalErrorFromUnknown(
+      "Network failure while analyzing terms.",
+      caughtError
+    );
     await persistError(context, message.domain, error);
     await persistStatus(context, message.domain, "error");
     await emitError(context, message.domain, error);
@@ -345,13 +377,19 @@ export const handleExtensionMessage = async (context: WorkerContext, message: Ex
 export const createWorkerContext = (
   chromeApi: ChromeWorkerApi,
   fetchImpl: typeof fetch = fetch
-): WorkerContext => ({
-  chromeApi,
-  fetchImpl,
-  now: () => new Date().toISOString(),
-  endpointUrl: ANALYZE_ENDPOINT_URL,
-  contentScriptFile: CONTENT_SCRIPT_FILE
-});
+): WorkerContext => {
+  // Bind fetch to globalThis because service-worker fetch can throw
+  // "Illegal invocation" when called with an arbitrary receiver.
+  const boundFetch = fetchImpl.bind(globalThis) as typeof fetch;
+
+  return {
+    chromeApi,
+    fetchImpl: boundFetch,
+    now: () => new Date().toISOString(),
+    endpointUrl: ANALYZE_ENDPOINT_URL,
+    contentScriptFile: CONTENT_SCRIPT_FILE
+  };
+};
 
 export const registerWorkerListeners = (context: WorkerContext): void => {
   context.chromeApi.runtime.onMessage.addListener((rawMessage) => {

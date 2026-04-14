@@ -10,6 +10,8 @@ import {
   extractReadabilityText,
   isTcHeadingText,
   isTcUrlPath,
+  MAX_EXTRACTED_TEXT_LENGTH,
+  truncateExtractedText,
   toSha256Hex
 } from "./extractor";
 
@@ -91,6 +93,14 @@ describe("extraction", () => {
 
     expect(message.text).toContain("Fallback text should be used.");
     expect(message.domain).toBe("example.com");
+  });
+
+  it("truncates very large extracted text before hashing/sending", async () => {
+    const oversized = "A".repeat(MAX_EXTRACTED_TEXT_LENGTH + 5000);
+    const truncated = truncateExtractedText(oversized);
+
+    expect(truncated).toHaveLength(MAX_EXTRACTED_TEXT_LENGTH);
+    expect(truncated.endsWith("A")).toBe(true);
   });
 });
 

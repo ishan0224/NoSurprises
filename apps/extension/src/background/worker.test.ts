@@ -160,6 +160,10 @@ describe("background worker orchestration", () => {
     const harness = createHarness();
     harness.fetchMock.mockResolvedValue({
       ok: true,
+      status: 200,
+      headers: {
+        get: (_name: string) => "application/json"
+      },
       json: async () => successResult
     } as Response);
 
@@ -230,6 +234,10 @@ describe("background worker orchestration", () => {
     const harness = createHarness();
     harness.fetchMock.mockResolvedValue({
       ok: false,
+      status: 502,
+      headers: {
+        get: (_name: string) => "application/json"
+      },
       json: async () => ({
         error: {
           code: "UPSTREAM_AI_FAILED",

@@ -23,6 +23,7 @@ const TERMS_KEYWORDS = [
 ] as const;
 
 const MAX_LINK_CANDIDATES = 5;
+export const MAX_EXTRACTED_TEXT_LENGTH = 120_000;
 
 export interface ReadabilityResultLike {
   textContent?: string | null;
@@ -112,6 +113,11 @@ export const fallbackDocumentText = (documentNode: Document): string =>
 export const cleanExtractedText = (rawText: string): string =>
   rawText.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
+export const truncateExtractedText = (cleanedText: string): string =>
+  cleanedText.length > MAX_EXTRACTED_TEXT_LENGTH
+    ? cleanedText.slice(0, MAX_EXTRACTED_TEXT_LENGTH)
+    : cleanedText;
+
 export const toSha256Hex = async (input: string): Promise<string> => {
   const encoded = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", encoded);
@@ -128,7 +134,7 @@ export const createTcFoundMessage = async (
   const parsed = new URL(pageUrl);
   const domain = normalizeDomain(parsed.hostname);
   const rawText = extractReadabilityText(documentNode, parserFactory) ?? fallbackDocumentText(documentNode);
-  const text = cleanExtractedText(rawText);
+  const text = truncateExtractedText(cleanExtractedText(rawText));
   const textHash = await toSha256Hex(text);
 
   return {

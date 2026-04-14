@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { resetEnvForTests } from "../../lib/env";
-import { middleware } from "../../middleware";
+import { proxy } from "../../proxy";
 
 function withEnv<T>(env: Record<string, string>, fn: () => T): T {
   const previous = { ...process.env };
@@ -15,14 +15,14 @@ function withEnv<T>(env: Record<string, string>, fn: () => T): T {
   }
 }
 
-describe("middleware CORS integration", () => {
+describe("proxy CORS integration", () => {
   it("handles OPTIONS preflight for allowed origin", () => {
     const response = withEnv(
       {
         ALLOWED_ORIGINS: "chrome-extension://abc123"
       },
       () =>
-        middleware(
+        proxy(
           new Request("http://localhost/api/analyze", {
             method: "OPTIONS",
             headers: {
@@ -43,7 +43,7 @@ describe("middleware CORS integration", () => {
         ALLOWED_ORIGINS: "chrome-extension://abc123"
       },
       () =>
-        middleware(
+        proxy(
           new Request("http://localhost/api/analyze", {
             method: "POST",
             headers: {

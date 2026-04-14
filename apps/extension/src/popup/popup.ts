@@ -1,6 +1,12 @@
 import type { AnalyzeErrorBody, AnalyzeSuccessResponse, RedFlag, RiskLabel } from "@contracts/api";
 import type { AnalysisStatus, TcLink } from "@contracts/storage";
-import type { AnalysisErrorMessage, AnalysisReadyMessage, RetryAnalysisMessage } from "@contracts/extension-messages";
+import type {
+  AnalysisErrorMessage,
+  AnalysisReadyMessage,
+  RetryAnalysisMessage,
+  TcLinksFoundMessage,
+  TcNotFoundMessage
+} from "@contracts/extension-messages";
 import {
   POPUP_COPY,
   POPUP_ERROR_MESSAGES,
@@ -51,11 +57,21 @@ export interface ChromePopupApi {
   };
 }
 
+type PopupRuntimeMessage =
+  | AnalysisReadyMessage
+  | AnalysisErrorMessage
+  | TcLinksFoundMessage
+  | TcNotFoundMessage;
+
 export const normalizeDomain = (hostname: string): string => hostname.replace(/^www\./i, "").toLowerCase();
 
 export const getFriendlyErrorMessage = (error?: AnalyzeErrorBody): string => {
   if (!error) {
     return POPUP_ERROR_MESSAGES.INTERNAL_ERROR;
+  }
+
+  if (error.code === "INTERNAL_ERROR" && error.message.trim()) {
+    return error.message;
   }
 
   return POPUP_ERROR_MESSAGES[error.code] ?? POPUP_ERROR_MESSAGES.INTERNAL_ERROR;
@@ -248,6 +264,50 @@ export const loadPopupState = async (chromeApi: ChromePopupApi, pageUrl: string)
   };
 };
 
+export const reducePopupStateFromRuntimeMessage = (
+  currentState: PopupViewState,
+  message: PopupRuntimeMessage
+): PopupViewState => {
+  if (message.domain !== currentState.domain) {
+    return currentState;
+  }
+
+  switch (message.type) {
+    case "ANALYSIS_READY":
+      return {
+        ...currentState,
+        status: "ready",
+        result: message.result,
+        error: undefined,
+        links: undefined
+      };
+    case "ANALYSIS_ERROR":
+      return {
+        ...currentState,
+        status: "error",
+        error: message.error
+      };
+    case "TC_LINKS_FOUND":
+      return {
+        ...currentState,
+        status: "links_found",
+        links: message.links,
+        result: undefined,
+        error: undefined
+      };
+    case "TC_NOT_FOUND":
+      return {
+        ...currentState,
+        status: "not_found",
+        links: undefined,
+        result: undefined,
+        error: undefined
+      };
+    default:
+      return currentState;
+  }
+};
+
 export const initPopup = async (
   documentNode: Document = document,
   chromeApi: ChromePopupApi = chrome as unknown as ChromePopupApi
@@ -282,24 +342,10 @@ export const initPopup = async (
       return;
     }
 
-    const message = rawMessage as AnalysisReadyMessage | AnalysisErrorMessage;
-    if (message.type === "ANALYSIS_READY" && message.domain === state.domain) {
-      state = {
-        ...state,
-        status: "ready",
-        result: message.result,
-        error: undefined
-      };
-      render();
-      return;
-    }
-
-    if (message.type === "ANALYSIS_ERROR" && message.domain === state.domain) {
-      state = {
-        ...state,
-        status: "error",
-        error: message.error
-      };
+    const message = rawMessage as PopupRuntimeMessage;
+    const nextState = reducePopupStateFromRuntimeMessage(state, message);
+    if (nextState !== state) {
+      state = nextState;
       render();
     }
   });

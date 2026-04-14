@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getEnv } from "../lib/env";
 import { AppError } from "../lib/errors";
 
-export const AI_MODEL_NAME = "gemini-2.0-flash";
+export const AI_MODEL_NAME = "gemini-3-flash-preview";
 
 export const ANALYSIS_PROMPT_TEMPLATE = [
   "You are a legal risk analysis assistant.",

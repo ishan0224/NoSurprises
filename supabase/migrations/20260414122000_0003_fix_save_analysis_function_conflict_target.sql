@@ -1,5 +1,6 @@
--- 0002_save_analysis_function.sql
--- Atomic write helper to keep exactly one latest analysis row per website.
+-- 0003_fix_save_analysis_function_conflict_target.sql
+-- Fix ambiguous identifier resolution inside save_analysis_version by using
+-- named unique constraint for upsert conflict target.
 
 create or replace function public.save_analysis_version(
   p_domain text,
